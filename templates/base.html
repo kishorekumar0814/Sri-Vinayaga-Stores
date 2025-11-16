@@ -5,23 +5,126 @@
   <title>Sri Vinayaga Stores</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+
+/* ---------------------------
+   UNIVERSAL TRANSITION OVERLAY
+---------------------------- */
+.page-transition-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.21s ease;
+}
+
+/* Dark Overlay */
+.overlay-active { opacity: 0.3; }
+
+/* ---------------------------
+   1. BLUR DISSOLVE
+---------------------------- */
+.blur-out {
+    filter: blur(12px);
+    opacity: 0;
+    transition: all 0.19s ease;
+}
+
+.blur-in {
+    animation: blurIn 0.19s ease forwards;
+}
+
+@keyframes blurIn {
+    0% { opacity: 0; filter: blur(15px); }
+    100% { opacity: 1; filter: blur(0); }
+}
+
+/* ---------------------------
+   2. COLOR TINT TRANSITION
+---------------------------- */
+.tint-overlay {
+    background: rgba(50, 100, 255, 0.7); /* blue tint */
+}
+
+.tint-active {
+    opacity: 1 !important;
+}
+
+.fade-tint-out {
+    opacity: 0;
+    transform: scale(1.03);
+    transition: all 0.175s ease;
+}
+
+.fade-tint-in {
+    animation: tintIn 0.175s ease forwards;
+}
+
+@keyframes tintIn {
+    0% { opacity: 0; transform: scale(1.03); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ---------------------------
+   3. SLIDE + FADE COMBO
+---------------------------- */
+.slide-out {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.2s ease-in-out;
+}
+
+.slide-in {
+    animation: slideIn 0.2s ease forwards;
+}
+
+@keyframes slideIn {
+    0% { opacity: 0; transform: translateY(-30px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------------------
+   4. iPhone ZOOM-DISSOLVE
+---------------------------- */
+.ios-out {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(10px);
+    transition: all 0.2s ease;
+}
+
+.ios-in {
+    animation: iosIn 0.2s ease forwards;
+}
+
+@keyframes iosIn {
+    0% { opacity: 0; transform: scale(1.07); filter: blur(12px); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+</style>
 </head>
 <body>
+  <div class="page-transition-overlay" id="overlay"></div>
   <div class="layout">
     <nav id="sideNav" class="sidenav">
       <button id="navToggle" class="nav-toggle">☰</button>
       <ul>
         <li><a href="{{ url_for('home') }}">Home</a></li>
         <li><a href="{{ url_for('customer_login') }}">Customer</a></li>
-        <li><a href="{{ url_for('admin_login') }}">Admin</a></li>
+        <li><a href="{{ url_for('admin_security') }}">Admin</a></li>
       </ul>
     </nav>
 
     <main class="main">
       <header class="site-header">
         <h1 class="shop-name">Sri Vinayaga Stores</h1>
-        <p><center>𝑃𝑖𝑙𝑙𝑎𝑖𝑦𝑎𝑟 𝐾𝑢𝑝𝑝𝑎𝑚, 𝑉𝑒𝑙𝑙𝑜𝑟𝑒 - 09</center><p>
-        <div class="quote-marquee"><marquee behavior="scroll" direction="left">𝐹𝑟𝑒𝑠ℎ 𝐷𝑎𝑖𝑙𝑦 𝐺𝑟𝑜𝑐𝑒𝑟𝑖𝑒𝑠 &nbsp &nbsp &nbsp &nbsp • &nbsp &nbsp &nbsp &nbsp  𝐹𝑟𝑖𝑒𝑛𝑑𝑙𝑦 𝑆𝑒𝑟𝑣𝑖𝑐𝑒 &nbsp &nbsp &nbsp &nbsp • &nbsp &nbsp &nbsp &nbsp 𝑄𝑢𝑎𝑙𝑖𝑡𝑦 𝑌𝑜𝑢 𝐶𝑎𝑛 𝑇𝑟𝑢𝑠𝑡</marquee></div>
+        <p><center><i>Pillaiyar Kuppam, Vellore - 09.</i></center><p>
+        <div class="quote-marquee"><marquee behavior="scroll" direction="left"><b><i>fresh daily groceries &nbsp &nbsp &nbsp &nbsp • &nbsp &nbsp &nbsp &nbsp friendy service &nbsp &nbsp &nbsp &nbsp • &nbsp &nbsp &nbsp &nbsp  quality you can trust</i></b></marquee></div>
         <div class="top-links">
           {% if session.get('role') == 'admin' %}
             <a class="badge" href="{{ url_for('admin_dashboard') }}">Admin: {{ session.get('admin_name') }}</a>
@@ -56,5 +159,55 @@
   </div>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let transition = "ios";  // 👈 CHANGE STYLE HERE
+
+    const overlay = document.getElementById("overlay");
+
+    // Apply incoming animation based on chosen style
+    switch (transition) {
+        case "blur": document.body.classList.add("blur-in"); break;
+        case "tint": document.body.classList.add("fade-tint-in"); break;
+        case "slide": document.body.classList.add("slide-in"); break;
+        case "ios": document.body.classList.add("ios-in"); break;
+    }
+
+    // Attach to all links
+    document.querySelectorAll("a").forEach(link => {
+
+        if (link.target === "_blank") return;
+        if (link.href.includes("#")) return;
+
+        link.addEventListener("click", function (e) {
+
+            e.preventDefault();
+            const url = this.href;
+
+            // Overlay style based on transition
+            if (transition === "tint") {
+                overlay.classList.add("tint-overlay", "tint-active");
+            } else {
+                overlay.classList.add("overlay-active");
+            }
+
+            // Apply outgoing animation
+            switch (transition) {
+                case "blur": document.body.classList.add("blur-out"); break;
+                case "tint": document.body.classList.add("fade-tint-out"); break;
+                case "slide": document.body.classList.add("slide-out"); break;
+                case "ios": document.body.classList.add("ios-out"); break;
+            }
+
+            // Navigate after animation
+            setTimeout(() => {
+                window.location.href = url;
+            }, 500);
+
+        });
+    });
+});
+</script>
 </body>
 </html>

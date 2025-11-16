@@ -1,86 +1,278 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="admin-wrap">
-  <div class="admin-card">
+
+<style>
+/* ---------------- STATUS COLORS ---------------- */
+.status-pending { color:#0f4c97; font-weight:550; }
+.status-received { color:#d49f00; font-weight:550; }
+.status-packed { color:#077d19; font-weight:550; }
+
+/* ---------------- FILE UPLOAD ---------------- */
+.custom-file-upload {
+    display: inline-block;
+    padding: 8px 14px;
+    background-color: #4A90E2;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+input[type="file"] { display: none; }
+
+/* Upload Submit Button */
+.upload-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background:#0066ff;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:not-allowed;
+    font-size:14px;
+    opacity: 0.5;
+}
+.upload-btn.enabled {
+    cursor: pointer;
+    opacity: 1;
+}
+.upload-btn:hover {
+    background:#0052cc;
+}
+
+/* Success animation */
+.fade-in {
+    opacity: 0;
+    animation: fadeIn 0.7s forwards;
+}
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+/* QR Preview */
+#qr-preview {
+    width: 70px;
+    height: 70px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    object-fit:cover;
+    display:none;
+}
+
+/* ---------------- BUTTONS ---------------- */
+.btn.small { 
+    padding:4px 8px; 
+    font-size:13px; 
+    border-radius:6px; 
+    background:#0066ff; 
+    color:white;
+}
+.btn.small:hover { background:#0052cc; }
+
+.btn.small.danger {
+    background:#c82333;
+    color:white;
+}
+.btn.small.danger:hover { background:#e3342f; }
+
+.btn.small.billing-btn { background:#0a7d1c; }
+.btn.small.billing-btn:hover { background:#0f9b2d; }
+
+/* ---------------- CARD LAYOUT ---------------- */
+.admin-card {
+    padding:20px;
+    border-radius:12px;
+    background:white;
+    margin-bottom:25px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+}
+
+.view-customer-btn {
+    margin-top:20px;
+    align-self:center;
+    padding:8px 18px;
+    background:#4A90E2;
+    color:white;
+    border-radius:6px;
+    text-decoration:none;
+}
+
+/* Tables */
+.orders-table td form, .orders-table td a {
+    display:inline-block;
+    margin:3px 0;
+}
+.orders-table select {
+    padding:4px 6px;
+    font-size:13px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+</style>
+
+<script>
+function handleFileSelection(input) {
+    const file = input.files[0];
+    const fileNameSpan = document.getElementById("selected-file-name");
+    const uploadBtn = document.getElementById("upload-btn");
+    const previewImg = document.getElementById("qr-preview");
+
+    if (file) {
+        fileNameSpan.textContent = file.name;
+
+        uploadBtn.disabled = false;
+        uploadBtn.classList.add('enabled');
+
+        previewImg.src = URL.createObjectURL(file);
+        previewImg.style.display = "block";
+    }
+}
+</script>
+
+
+<!-- ------------------- ADMIN CARD ------------------- -->
+<div class="admin-card">
     <h3>Admin Details</h3>
+
     <p><strong>Name:</strong> {{ admin.name }}</p>
     <p><strong>AUID:</strong> {{ admin.auid }}</p>
     <p><strong>Mobile:</strong> {{ admin.mobile }}</p>
-    <div style="text-align:right;">
-    <a href="{{ url_for('admin_update') }}" class="btn small">Edit Profile</a>
-    <form method="post" action="{{ url_for('admin_delete') }}" style="display:inline;" onsubmit="return confirm('Delete your admin account permanently?');">
-        <button class="btn small danger">Delete Account</button>
-    </form>
-    </div>
-    <form method="post" action="{{ url_for('admin_upload_qr') }}" enctype="multipart/form-data">
-    <label>Upload QR (for bills)</label>
-    <input type="file" name="qr" accept="image/*">
-    <button class="btn" type="submit">Upload QR</button>
-    &nbsp; &nbsp;
-    <a href="{{ url_for('admin_customers') }}" class="btn">View Customers</a>
 
-    {% if session.get('qr_uploaded') %}
-        <span style="color: green; font-weight: bold; margin-left: 10px;">
+    <!-- Edit + Delete -->
+    <div style="text-align:right; margin-bottom:10px;">
+        <a href="{{ url_for('admin_update') }}" class="btn small">Edit Profile</a>
+        <form method="post" action="{{ url_for('admin_delete') }}" style="display:inline;"
+            onsubmit="return confirm('Delete your admin account permanently?');">
+            <button class="btn small danger">Delete Account</button>
+        </form>
+    </div>
+
+    <!-- ------------------ QR UPLOAD ------------------ -->
+<form method="post" action="{{ url_for('admin_upload_qr') }}" enctype="multipart/form-data">
+
+    <label><strong>Upload QR (for bills)</strong></label><br><br>
+
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+
+        <!-- CUSTOM FILE BUTTON -->
+        <label class="custom-file-upload">
+            Choose QR Image
+            <input type="file" name="qr" accept="image/*" onchange="handleFileSelection(this)">
+        </label>
+
+        <!-- FILE NAME DISPLAY -->
+        <span id="selected-file-name" style="font-weight:600; color:#444;"></span>
+
+        <!-- QR PREVIEW -->
+        <img id="qr-preview" />
+
+        <!-- UPLOAD BUTTON -->
+        <button id="upload-btn" type="submit" class="upload-btn" disabled>Upload QR</button>
+
+        <!-- SUCCESS MESSAGE -->
+        {% if session.get('qr_uploaded') %}
+        <span class="fade-in" style="color: green; font-weight: bold;">
             QR Code Uploaded ✔
         </span>
-    {% endif %}
-  </form>
-  </div>
+        {% endif %}
+    </div>
 
-  <div class="orders-card">
+</form>
+
+    <a href="{{ url_for('admin_customers') }}" class="view-customer-btn">View Customers</a>
+</div>
+
+
+
+<!-- ------------------- ORDERS CARD ------------------- -->
+<div class="orders-card">
     <h3>Customer Orders</h3>
+
     {% if orders %}
-      <table class="orders-table">
-        <thead><tr><th>OrderID</th><th>Customer</th><th>Items/Text</th><th>File</th><th>Pickup</th><th>Status</th><th>Actions</th></tr></thead>
+    <table class="orders-table">
+        <thead>
+            <tr>
+                <th>OrderID</th><th>Customer</th><th>Items/Text</th>
+                <th>File</th><th>Pickup</th><th>Status</th><th>Actions</th>
+            </tr>
+        </thead>
+
         <tbody>
         {% for o in orders %}
-          <tr>
-            <td>{{ o.order_id }}</td>
-            <td>{{ o.customer.name }} ({{ o.customer.email }})</td>
-            <td style="max-width:220px;overflow:auto;">{{ o.raw_text or '-' }}</td>
-            <td>
-              {% if o.uploaded_filename %}
-                <a href="{{ url_for('uploaded_file', filename=o.uploaded_filename) }}" target="_blank">view</a>
-              {% else %}-{% endif %}
-            </td>
-            <td>{{ o.pickup_option }}</td>
-            <td>{{ o.status }}</td>
-            <td>
-              <form method="post" action="{{ url_for('admin_change_status', order_id=o.id) }}" style="display:inline;">
-                <select name="status">
-                  <option value="Pending" {% if o.status=='Pending' %}selected{% endif %}>Pending</option>
-                  <option value="Received" {% if o.status=='Received' %}selected{% endif %}>Received</option>
-                  <option value="Packed" {% if o.status=='Packed' %}selected{% endif %}>Packed</option>
-                </select>
-                <button class="btn small" type="submit">Update</button>
-              </form>
+            <tr>
+                <td>{{ o.order_id }}</td>
+                <td>{{ o.customer.name }} ({{ o.customer.email }})</td>
+                <td style="max-width:220px;overflow:auto;">{{ o.raw_text or '-' }}</td>
 
-              <form method="post" action="{{ url_for('admin_delete_order', order_id=o.id) }}" style="display:inline;" onsubmit="return confirm('Delete order?');">
-                <button class="btn small danger" type="submit">Delete</button>
-              </form>
+                <td>
+                    {% if o.uploaded_filename %}
+                        <a href="{{ url_for('uploaded_file', filename=o.uploaded_filename) }}" target="_blank">View</a>
+                    {% else %}-{% endif %}
+                </td>
 
-              <a class="btn small" href="{{ url_for('billing', order_id=o.id) }}">Billing</a>
-            </td>
-          </tr>
+                <td>{{ o.pickup_option }}</td>
+
+                <td>
+                    <span class="
+                        {% if o.status == 'Pending' %}status-pending
+                        {% elif o.status == 'Received' %}status-received
+                        {% elif o.status == 'Packed' %}status-packed
+                        {% endif %}
+                    ">
+                    {{ o.status }}
+                    </span>
+                </td>
+
+                <td>
+                    <form method="post" action="{{ url_for('admin_change_status', order_id=o.id) }}">
+                        <select name="status">
+                            <option value="Pending" {% if o.status=='Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Received" {% if o.status=='Received' %}selected{% endif %}>Received</option>
+                            <option value="Packed" {% if o.status=='Packed' %}selected{% endif %}>Packed</option>
+                        </select>
+                        <button class="btn small" type="submit">Update</button>
+                    </form>
+
+                    <form method="post" action="{{ url_for('admin_delete_order', order_id=o.id) }}"
+                          onsubmit="return confirm('Delete order?');">
+                        <button class="btn small danger" type="submit">Delete</button>
+                    </form>
+
+                    <a class="btn small billing-btn" href="{{ url_for('billing', order_id=o.id) }}">Billing</a>
+                </td>
+
+            </tr>
         {% endfor %}
         </tbody>
-      </table>
-    {% else %}
-      <p>No orders yet.</p>
-    {% endif %}
-  </div>
+    </table>
 
-  <div class="bills-card">
-    <h3>Generated Bills</h3>
-    {% if bills %}
-      <ul>
-      {% for b in bills %}
-        <li>{{ b.bill_id }} — Order: {{ b.order_id }} — Total ₹{{ "%.2f"|format(b.total_amount) }} — <a href="{{ url_for('download_bill', bill_id=b.bill_id) }}">Download</a></li>
-      {% endfor %}
-      </ul>
     {% else %}
-      <p>No bills yet.</p>
+        <p>No orders yet.</p>
     {% endif %}
-  </div>
 </div>
+
+
+
+<!-- ------------------- BILLS CARD ------------------- -->
+<div class="bills-card">
+    <h3>Generated Bills</h3>
+
+    {% if bills %}
+        <ul>
+        {% for b in bills %}
+            <li>
+                {{ b.bill_id }} — Order: {{ b.order_id }} — Total ₹{{ "%.2f"|format(b.total_amount) }} —
+                <a href="{{ url_for('download_bill', bill_id=b.bill_id) }}">Download</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No bills yet.</p>
+    {% endif %}
+</div>
+
 {% endblock %}

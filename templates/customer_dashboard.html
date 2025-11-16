@@ -1,5 +1,100 @@
 {% extends "base.html" %}
 {% block content %}
+
+<style>
+/*==========================
+    CUSTOMER DASHBOARD CSS
+===========================*/
+
+/* Textarea Styling */
+.order-form-card textarea {
+    width: 100%;
+    height: 120px;
+    padding: 12px;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    outline: none;
+    transition: 0.2s;
+}
+
+.order-form-card textarea:focus {
+    border-color: #2b7cff;
+    box-shadow: 0 0 4px rgba(43, 124, 255, 0.4);
+}
+
+/* File Upload Input Styling */
+.order-form-card input[type="file"] {
+    display: block;
+    margin-top: 8px;
+    padding: 8px;
+    background: #f4f4f4;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.order-form-card input[type="file"]:hover {
+    background: #e8e8e8;
+}
+
+/* Select Box (Pickup Option) */
+.order-form-card select {
+    width: 100%;
+    padding: 10px;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-top: 10px;
+    background: white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.order-form-card select:focus {
+    border-color: #2b7cff;
+    box-shadow: 0 0 4px rgba(43,124,255,0.4);
+}
+
+/* Label Styling */
+.order-form-card label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #444;
+}
+
+/* Smaller Submit Button */
+.order-form-card .btn {
+    margin-top: 15px;
+    padding: 8px 14px;
+    font-size: 14px;
+    width: auto;          /* not full width */
+    display: inline-block;
+    border-radius: 6px;
+}
+
+/* Status Colors */
+.status-pending {
+    color: #0f4c97;        /* dark blue */
+    font-weight: 550;
+}
+
+.status-received {
+    color: #d49f00;        /* dark yellow */
+    font-weight: 550;
+}
+
+.status-packed {
+    color: #077d19;        /* green */
+    font-weight: 550;
+}
+
+</style>
+
 <div class="customer-wrap">
   <div class="customer-card">
     <h3>Your Details</h3>
@@ -8,29 +103,29 @@
     <p><strong>Mobile:</strong> {{ customer.mobile }}</p>
     <p><strong>Address:</strong> {{ customer.address }}</p>
     <div style="text-align:right;">
-    <a href="{{ url_for('customer_update') }}" class="btn small">Edit Profile</a>
-    <form method="post" action="{{ url_for('customer_delete') }}" style="display:inline;" onsubmit="return confirm('Delete your account permanently?');">
-        <button class="btn small danger">Delete Account</button>
-    </form>
-</div>
-
+      <a href="{{ url_for('customer_update') }}" class="btn small">Edit Profile</a>
+      <form method="post" action="{{ url_for('customer_delete') }}" style="display:inline;" onsubmit="return confirm('Delete your account permanently?');">
+          <button class="btn small danger">Delete Account</button>
+      </form>
+    </div>
   </div>
 
   <div class="order-form-card">
     <h3>Place Order</h3>
     <form method="post" enctype="multipart/form-data">
+
       <label>Order (text)</label>
       <textarea name="order_text" placeholder="2kg rice, 1kg sugar..."></textarea>
-      &nbsp; &nbsp; &nbsp; &nbsp;
-      <label>or</label>
-      &nbsp; &nbsp; &nbsp; &nbsp;
-      <label>Upload document (jpg,png,pdf,doc)</label>
+
+      <label>Upload document (jpg,jpej,png,pdf,doc)</label>
       <input type="file" name="order_file">
+
       <label>Pickup option</label>
       <select name="pickup_option">
         <option>Self Pick</option>
         <option>Home Delivery</option>
       </select>
+
       <div class="form-actions">
         <button class="btn" type="submit">Submit Order</button>
       </div>
@@ -41,7 +136,16 @@
     <h3>Your Orders</h3>
     {% if orders %}
       <table class="orders-table">
-        <thead><tr><th>OrderID</th><th>Items/Text</th><th>File</th><th>Pickup</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead>
+          <tr>
+            <th>OrderID</th>
+            <th>Items/Text</th>
+            <th>File</th>
+            <th>Pickup</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
         <tbody>
         {% for o in orders %}
           <tr>
@@ -49,11 +153,23 @@
             <td style="max-width:220px;overflow:auto;">{{ o.raw_text or '-' }}</td>
             <td>
               {% if o.uploaded_filename %}
-                <a href="{{ url_for('uploaded_file', filename=o.uploaded_filename) }}" target="_blank">view</a>
-              {% else %}-{% endif %}
+                <a href="{{ url_for('uploaded_file', filename=o.uploaded_filename) }}" target="_blank">View</a>
+              {% else %}
+                -
+              {% endif %}
             </td>
             <td>{{ o.pickup_option }}</td>
-            <td>{{ o.status }}</td>
+            <td>
+            <span 
+              class="
+                {% if o.status == 'Pending' %}status-pending
+                {% elif o.status == 'Received' %}status-received
+                {% elif o.status == 'Packed' %}status-packed
+                {% endif %}
+              ">
+              {{ o.status }}
+            </span>
+            </td>
             <td>
               <form method="post" action="{{ url_for('customer_delete_order', order_pk=o.id) }}" onsubmit="return confirm('Delete order?');">
                 <button class="btn small danger" type="submit">Delete</button>
@@ -71,4 +187,5 @@
     {% endif %}
   </div>
 </div>
+
 {% endblock %}
